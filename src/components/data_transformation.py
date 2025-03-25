@@ -1,3 +1,4 @@
+import logging
 import sys
 import os
 import numpy as np
@@ -92,7 +93,7 @@ class DataTransformation:
             
             logging.info("Saved preprocessing object.")
             
-            save_object(
+            save_object( # type: ignore
                 file_path=self.data_transformation_config.preprocessor_obj_file_path,
                 obj=preprocessing_obj
             )
