@@ -20,7 +20,7 @@ setup(
 name='Alzheimers_disease_prediction',
 version='0.0.1',
 author='rithika10-hub',
-author_email='rithikaravichandran25@gmail.com',
+author_email='rithikaravichandran25@gmail.com ',
 packages=find_packages(),
 install_requires=get_requirements('requirements.txt')
 
