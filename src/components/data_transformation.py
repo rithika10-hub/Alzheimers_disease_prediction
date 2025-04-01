@@ -1,3 +1,4 @@
+import logging
 import sys
 import os
 import numpy as np
@@ -84,8 +85,14 @@ class DataTransformation:
             train_arr = np.c_[input_feature_train_arr, np.array(target_feature_train_df)]
             test_arr = np.c_[input_feature_test_arr, np.array(target_feature_test_df)]
             
+<<<<<<< HEAD
             logger.info("Saving the preprocessing object.")
             save_object(
+=======
+            logging.info("Saved preprocessing object.")
+            
+            save_object( # type: ignore
+>>>>>>> 411b03acd0e0049701eb568e48a26a212c456793
                 file_path=self.data_transformation_config.preprocessor_obj_file_path,
                 obj=preprocessing_obj
             )

@@ -6,12 +6,23 @@ from sklearn.model_selection import train_test_split
 
 # Import the logger correctly
 from src.exception.exception import customexception
+<<<<<<< HEAD
 from src.loggs.logger import logger  # Ensure 'loggs' is the correct folder name
   # type: ignore # Fixed import
 from src.components.data_transformation import DataTransformation
 from src.components.data_transformation import DataTransformationConfig
 from src.components.model_trainer import ModelTrainerConfig
 from src.components.model_trainer import ModelTrainer
+=======
+from src.loggs.logger import logger  # Ensure 'loggs' is the correct folder na\
+
+from src.components.data_transformation import DataTransformation
+from src.components.data_transformation import DataTransformationConfig
+
+from src.components.model_trainer import ModelTrainerConfig
+from src.components.model_trainer import ModelTrainer
+
+>>>>>>> 411b03acd0e0049701eb568e48a26a212c456793
 
 @dataclass
 class DataIngestionConfig:
@@ -60,7 +71,14 @@ if __name__ == "__main__":
     train_data, test_data = obj.initiate_data_ingestion()
 
     data_transformation=DataTransformation()
+<<<<<<< HEAD
     train_arr,test_arr=data_transformation.initiate_data_transformation(train_data,test_data)
     
     modeltrainer=ModelTrainer()
     print(modeltrainer.initiate_model_training(train_arr, test_arr))
+=======
+    train_arr,test_arr,_=data_transformation.initiate_data_transformation(train_data,test_data)
+
+    modeltrainer=ModelTrainer()
+    print(modeltrainer.initiate_model_trainer(train_arr,test_arr))
+>>>>>>> 411b03acd0e0049701eb568e48a26a212c456793
