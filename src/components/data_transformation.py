@@ -9,7 +9,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from src.exception.exception import customexception
 from src.loggs.logger import logger
-
+from src.utils import save_object
 
 @dataclass
 class DataTransformationConfig:
@@ -20,9 +20,6 @@ class DataTransformation:
         self.data_transformation_config = DataTransformationConfig()
 
     def get_data_transformer_object(self):
-        """
-        This function is responsible for data transformation.
-        """
         try:
             numerical_columns = [
                 "Age", "BMI", "AlcoholConsumption", "PhysicalActivity", "DietQuality", 
@@ -44,12 +41,10 @@ class DataTransformation:
             
             cat_pipeline = Pipeline([
                 ("imputer", SimpleImputer(strategy="most_frequent")),
-                ("one_hot_encoder", OneHotEncoder(handle_unknown='ignore')),
-                ("scaler", StandardScaler(with_mean=False))
+                ("one_hot_encoder", OneHotEncoder(handle_unknown='ignore'))
             ])
             
-            logging.info(f"Categorical columns: {categorical_columns}")
-            logging.info(f"Numerical columns: {numerical_columns}")
+            logger.info("Creating column transformer with preprocessing pipelines")
             
             preprocessor = ColumnTransformer([
                 ("num_pipeline", num_pipeline, numerical_columns),
@@ -65,16 +60,15 @@ class DataTransformation:
             train_df = pd.read_csv(train_path)
             test_df = pd.read_csv(test_path)
             
-            logging.info("Read train and test data completed")
-            logging.info("Obtaining preprocessing object")
+            logger.info("Successfully loaded train and test datasets.")
             
             preprocessing_obj = self.get_data_transformer_object()
             
             target_column_name = "Diagnosis"
+            unnecessary_columns = ["PatientID", "DoctorInCharge"]
             
-            # Drop unwanted columns
-            train_df = train_df.drop(columns=["PatientID", "DoctorInCharge"], errors='ignore')
-            test_df = test_df.drop(columns=["PatientID", "DoctorInCharge"], errors='ignore')
+            train_df.drop(columns=[col for col in unnecessary_columns if col in train_df], inplace=True)
+            test_df.drop(columns=[col for col in unnecessary_columns if col in test_df], inplace=True)
             
             input_feature_train_df = train_df.drop(columns=[target_column_name], axis=1)
             target_feature_train_df = train_df[target_column_name]
@@ -82,7 +76,7 @@ class DataTransformation:
             input_feature_test_df = test_df.drop(columns=[target_column_name], axis=1)
             target_feature_test_df = test_df[target_column_name]
             
-            logging.info("Applying preprocessing object on training and testing data.")
+            logger.info("Applying preprocessing transformations on training and testing data.")
             
             input_feature_train_arr = preprocessing_obj.fit_transform(input_feature_train_df)
             input_feature_test_arr = preprocessing_obj.transform(input_feature_test_df)
@@ -90,13 +84,12 @@ class DataTransformation:
             train_arr = np.c_[input_feature_train_arr, np.array(target_feature_train_df)]
             test_arr = np.c_[input_feature_test_arr, np.array(target_feature_test_df)]
             
-            logging.info("Saved preprocessing object.")
-            
+            logger.info("Saving the preprocessing object.")
             save_object(
                 file_path=self.data_transformation_config.preprocessor_obj_file_path,
                 obj=preprocessing_obj
             )
             
-            return train_arr, test_arr, self.data_transformation_config.preprocessor_obj_file_path
+            return train_arr, test_arr
         except Exception as e:
             raise customexception(e, sys)
