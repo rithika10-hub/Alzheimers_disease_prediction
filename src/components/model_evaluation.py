@@ -7,59 +7,60 @@ from urllib.parse import urlparse
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 from src.utils import load_object
-from src.loggs import logging
+from src.loggs.logger import logger  # Ensure correct import
 from src.exception.exception import customexception
 
 class ModelEvaluation:
     def __init__(self):
-        logging.info("Model evaluation process started.")
+        logger.info("Model evaluation process started.")
+        mlflow.set_tracking_uri("   ")  # Set MLflow tracking URI
 
     def eval_metrics(self, actual, pred):
         """
         Compute evaluation metrics: RMSE, MAE, R² score.
         """
-        rmse = np.sqrt(mean_squared_error(actual, pred))  # Root Mean Squared Error
-        mae = mean_absolute_error(actual, pred)  # Mean Absolute Error
-        r2 = r2_score(actual, pred)  # R² Score
-        logging.info(f"Evaluation Metrics - RMSE: {rmse}, MAE: {mae}, R²: {r2}")
-        return rmse, mae, r2
+        rmse = np.sqrt(mean_squared_error(actual, pred))
+        mae = mean_absolute_error(actual, pred)
+        r2 = r2_score(actual, pred)
+        logger.info(f"Evaluation Metrics - RMSE: {rmse}, MAE: {mae}, R²: {r2}")
+        return {"rmse": rmse, "mae": mae, "r2": r2}
 
     def initiate_model_evaluation(self, test_array):
         """
         Evaluate the model using test data.
         """
         try:
-            # Splitting test data into features and target
             X_test, y_test = test_array[:, :-1], test_array[:, -1]
 
             # Load the trained model
             model_path = os.path.join("artifacts", "model.pkl")
+            if not os.path.exists(model_path):
+                logger.error(f"Model file missing at {model_path}. Please train the model first.")
+                return None  # Stop execution gracefully
+            
             model = load_object(model_path)
+            logger.info("Model loaded successfully.")
 
-            logging.info("Model loaded successfully.")
-
-            # Get the MLflow tracking URI
             tracking_url_type_store = urlparse(mlflow.get_tracking_uri()).scheme
-            logging.info(f"MLflow Tracking URI: {tracking_url_type_store}")
+            logger.info(f"MLflow Tracking URI: {tracking_url_type_store}")
 
-            # Start MLflow experiment run
             with mlflow.start_run():
                 predictions = model.predict(X_test)
-                rmse, mae, r2 = self.eval_metrics(y_test, predictions)
+                metrics = self.eval_metrics(y_test, predictions)
 
-                # Log metrics to MLflow
-                mlflow.log_metric("rmse", rmse)
-                mlflow.log_metric("r2", r2)
-                mlflow.log_metric("mae", mae)
+                mlflow.log_metric("rmse", metrics["rmse"])
+                mlflow.log_metric("r2", metrics["r2"])
+                mlflow.log_metric("mae", metrics["mae"])
 
-                # Register model only if not using a file store
                 if tracking_url_type_store != "file":
                     mlflow.sklearn.log_model(model, "model", registered_model_name="alzheimers_ml_model")
                 else:
                     mlflow.sklearn.log_model(model, "model")
 
-                logging.info("Model evaluation completed and logged in MLflow.")
+                logger.info("Model evaluation completed and logged in MLflow.")
+
+            return metrics  # Return evaluation metrics
 
         except Exception as e:
-            logging.error(f"Error during model evaluation: {str(e)}")
+            logger.error(f"Error during model evaluation: {str(e)}")
             raise customexception(e, sys)

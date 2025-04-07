@@ -1,68 +1,53 @@
 import os
 import sys
+import pickle
 import pandas as pd
-from dataclasses import dataclass
-from sklearn.model_selection import train_test_split
-
-# Import the logger correctly
+from sklearn.ensemble import RandomForestRegressor
 from src.exception.exception import customexception
-from src.loggs.logger import logger  # Ensure 'loggs' is the correct folder na\
 
-from src.components.data_transformation import DataTransformation
-from src.components.data_transformation import DataTransformationConfig
-
-from src.components.model_trainer import ModelTrainerConfig
-from src.components.model_trainer import ModelTrainer
-
-
-@dataclass
-class DataIngestionConfig:
-    train_data_path: str = os.path.join('artifacts', "train.csv")
-    test_data_path: str = os.path.join('artifacts', "test.csv")
-    raw_data_path: str = os.path.join('artifacts', "data.csv")
-
-
-class DataIngestion:
+class ModelTrainer:
     def __init__(self):
-        self.ingestion_config = DataIngestionConfig()
-
-    def initiate_data_ingestion(self):
-        logger.info("Entered the data ingestion method or component")  # Fixed logger usage
-
+        self.model_path = os.path.join("artifacts", "model.pkl")
+    
+    def train_model(self, train_arr, test_arr):
         try:
-            # Change the path if needed
-            dataset_path = "c:\\Users\\harib\\Downloads\\alzheimer\\alzheimers_disease_data.csv"
-            df = pd.read_csv(dataset_path)
+            # Extract feature names from preprocessor
+            preprocessor_path = os.path.join("artifacts", "preprocessor.pkl")
+            with open(preprocessor_path, 'rb') as f:
+                preprocessor = pickle.load(f)
+                all_feature_names = preprocessor.feature_names_in_.tolist()
 
-            logger.info('Read the dataset as dataframe')
+            print(f"train_arr shape: {train_arr.shape}")  # Debugging
+            print(f"Feature names count: {len(all_feature_names)}")  # Debugging
+            
+            if len(all_feature_names) != train_arr.shape[1]:  
+                raise ValueError(f"Mismatch: train_arr has {train_arr.shape[1]} columns, but all_feature_names has {len(all_feature_names)} columns")
+            
+            # Create DataFrame
+            df_train = pd.DataFrame(train_arr, columns=all_feature_names)
+            df_test = pd.DataFrame(test_arr, columns=all_feature_names)
 
-            os.makedirs(os.path.dirname(self.ingestion_config.train_data_path), exist_ok=True)
+            # Splitting into X, y
+            X_train = df_train.iloc[:, :-1]
+            y_train = df_train.iloc[:, -1]
+            X_test = df_test.iloc[:, :-1]
+            y_test = df_test.iloc[:, -1]
 
-            df.to_csv(self.ingestion_config.raw_data_path, index=False, header=True)
+            # Train the model
+            model = RandomForestRegressor()
+            model.fit(X_train, y_train)
 
-            logger.info("Train-test split initiated")
-            train_set, test_set = train_test_split(df, test_size=0.2, random_state=42)
-
-            train_set.to_csv(self.ingestion_config.train_data_path, index=False, header=True)
-            test_set.to_csv(self.ingestion_config.test_data_path, index=False, header=True)
-
-            logger.info("Data ingestion completed successfully")
-
-            return (
-                self.ingestion_config.train_data_path,
-                self.ingestion_config.test_data_path
-            )
-
+            # Save model
+            with open(self.model_path, "wb") as f:
+                pickle.dump(model, f)
+            
+            return self.model_path
         except Exception as e:
-            raise customexception(e, sys)  # Fixed Exception Handling
+            raise customexception(e, sys)
 
-
-if __name__ == "__main__":
-    obj = DataIngestion()
-    train_data, test_data = obj.initiate_data_ingestion()
-
-    data_transformation=DataTransformation()
-    train_arr,test_arr,_=data_transformation.initiate_data_transformation(train_data,test_data)
-
-    modeltrainer=ModelTrainer()
-    print(modeltrainer.initiate_model_trainer(train_arr,test_arr))
+    def initiate_model_trainer(self, train_arr, test_arr):
+        try:
+            model_path = self.train_model(train_arr, test_arr)
+            return model_path
+        except Exception as e:
+            raise customexception(e, sys)
